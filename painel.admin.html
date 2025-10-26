@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔐 Painel Admin - Gerenciar Alunos</title>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #064420 0%, #0a6b33 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #064420 0%, #0a6b33 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .section {
+            margin-bottom: 40px;
+        }
+
+        .section h2 {
+            color: #064420;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: all 0.3s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #064420;
+            box-shadow: 0 0 0 3px rgba(6, 68, 32, 0.1);
+        }
+
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #064420 0%, #0a6b33 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(6, 68, 32, 0.3);
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c82333;
+        }
+
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 0.85em;
+        }
+
+        .message {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .message.show {
+            display: block;
+        }
+
+        .message.success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+
+        .message.error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+
+        .user-list {
+            margin-top: 20px;
+        }
+
+        .user-item {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .user-info {
+            flex: 1;
+        }
+
+        .user-email {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .user-date {
+            font-size: 0.85em;
+            color: #666;
+        }
+
+        .info-box {
+            background: #e8f5e9;
+            border-left: 4px solid #064420;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+
+        .info-box h3 {
+            color: #064420;
+            margin-bottom: 10px;
+        }
+
+        .info-box ul {
+            padding-left: 20px;
+            line-height: 1.8;
+        }
+
+        .instructions {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+
+        .instructions h3 {
+            color: #856404;
+            margin-bottom: 10px;
+        }
+
+        .login-section {
+            display: block;
+        }
+
+        .admin-section {
+            display: none;
+        }
+
+        .admin-section.active {
+            display: block;
+        }
+
+        .login-section.hidden {
+            display: none;
+        }
+
+        .logout-btn {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: 1px solid rgba(255,255,255,0.3);
+            padding: 8px 16px;
+            font-size: 0.9em;
+            margin-top: 10px;
+        }
+
+        .logout-btn:hover {
+            background: rgba(255,255,255,0.3);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔐 Painel Administrativo</h1>
+            <p>Gerencie o acesso dos seus alunos</p>
+        </div>
+
+        <div class="content">
+            <!-- SEÇÃO DE LOGIN DO ADMIN -->
+            <div id="loginSection" class="login-section">
+                <div class="instructions">
+                    <h3>⚠️ Área Restrita</h3>
+                    <p>Este painel é exclusivo para administradores. Faça login com suas credenciais de admin.</p>
+                </div>
+
+                <div id="loginMessage" class="message"></div>
+
+                <div class="form-group">
+                    <label for="adminEmail">Email Admin</label>
+                    <input type="email" id="adminEmail" placeholder="admin@seudominio.com">
+                </div>
+
+                <div class="form-group">
+                    <label for="adminPassword">Senha Admin</label>
+                    <input type="password" id="adminPassword" placeholder="Sua senha de admin">
+                </div>
+
+                <button class="btn-primary" onclick="loginAdmin()">Entrar como Admin</button>
+            </div>
+
+            <!-- SEÇÃO ADMIN (após login) -->
+            <div id="adminSection" class="admin-section">
+                <button class="logout-btn" onclick="logoutAdmin()">Sair</button>
+
+                <div class="info-box">
+                    <h3>ℹ️ Como Funciona</h3>
+                    <ul>
+                        <li>Cadastre o email e senha de cada aluno que comprou seu curso</li>
+                        <li>O aluno receberá essas credenciais para acessar a calculadora</li>
+                        <li>Você pode excluir o acesso de um aluno a qualquer momento</li>
+                        <li>Mantenha senhas fortes para segurança</li>
+                    </ul>
+                </div>
+
+                <!-- CADASTRAR NOVO ALUNO -->
+                <div class="section">
+                    <h2>➕ Cadastrar Novo Aluno</h2>
+                    
+                    <div id="addMessage" class="message"></div>
+
+                    <div class="form-group">
+                        <label for="studentEmail">Email do Aluno</label>
+                        <input type="email" id="studentEmail" placeholder="aluno@email.com">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="studentPassword">Senha para o Aluno</label>
+                        <input type="password" id="studentPassword" placeholder="Crie uma senha forte">
+                        <small style="color: #666; display: block; margin-top: 5px;">
+                            Mínimo 6 caracteres. O aluno usará esta senha para fazer login.
+                        </small>
+                    </div>
+
+                    <button class="btn-primary" onclick="addStudent()">Cadastrar Aluno</button>
+                </div>
+
+                <!-- LISTA DE ALUNOS -->
+                <div class="section">
+                    <h2>👥 Alunos Cadastrados</h2>
+                    
+                    <div id="deleteMessage" class="message"></div>
+                    
+                    <div id="userList" class="user-list">
+                        <p style="color: #666; text-align: center;">Carregando alunos...</p>
+                    </div>
+                </div>
+
+                <!-- INSTRUÇÕES PARA ENVIAR AO ALUNO -->
+                <div class="section">
+                    <h2>📧 Mensagem para Enviar ao Aluno</h2>
+                    
+                    <div class="info-box">
+                        <h3>📋 Copie e envie esta mensagem:</h3>
+                        <p style="background: white; padding: 15px; border-radius: 5px; margin-top: 10px; line-height: 1.6;">
+                            Olá! 🎉<br><br>
+                            
+                            Você agora tem acesso à <strong>Calculadora de Métricas Meta Ads</strong>!<br><br>
+                            
+                            <strong>🔗 Link:</strong> [COLOQUE O LINK DA SUA CALCULADORA AQUI]<br><br>
+                            
+                            <strong>🔐 Suas credenciais de acesso:</strong><br>
+                            Email: [EMAIL DO ALUNO]<br>
+                            Senha: [SENHA QUE VOCÊ CRIOU]<br><br>
+                            
+                            Use a calculadora para descobrir os benchmarks ideais para suas campanhas de tráfego pago!<br><br>
+                            
+                            Qualquer dúvida, estou à disposição! 🚀
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==========================================
+        // CONFIGURAÇÃO DO FIREBASE
+        // ==========================================
+        // IMPORTANTE: Use as MESMAS credenciais da calculadora
+        const firebaseConfig = {
+  apiKey: "AIzaSyD3SmM1glMqRWj08ZQHb1Sc6DuqFKjPDjk",
+  authDomain: "calculadora-de-trafego.firebaseapp.com",
+  projectId: "calculadora-de-trafego",
+  storageBucket: "calculadora-de-trafego.firebasestorage.app",
+  messagingSenderId: "828628883417",
+  appId: "1:828628883417:web:009f8b28033854b3722bc8",
+  measurementId: "G-EM1BVLL3KE"
+};
+
+        // Inicializar Firebase
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+
+        // ==========================================
+        // FUNÇÕES DE ADMIN
+        // ==========================================
+
+        // Login do Admin
+        async function loginAdmin() {
+            const email = document.getElementById('adminEmail').value;
+            const password = document.getElementById('adminPassword').value;
+            const messageDiv = document.getElementById('loginMessage');
+
+            if (!email || !password) {
+                showMessage(messageDiv, 'Por favor, preencha email e senha.', 'error');
+                return;
+            }
+
+            try {
+                await auth.signInWithEmailAndPassword(email, password);
+                
+                // Mostrar painel admin
+                document.getElementById('loginSection').classList.add('hidden');
+                document.getElementById('adminSection').classList.add('active');
+                
+                // Carregar lista de usuários
+                loadUsers();
+                
+            } catch (error) {
+                let errorText = 'Erro ao fazer login.';
+                
+                if (error.code === 'auth/user-not-found') {
+                    errorText = 'Usuário não encontrado.';
+                } else if (error.code === 'auth/wrong-password') {
+                    errorText = 'Senha incorreta.';
+                } else if (error.code === 'auth/invalid-email') {
+                    errorText = 'Email inválido.';
+                }
+                
+                showMessage(messageDiv, errorText, 'error');
+            }
+        }
+
+        // Logout do Admin
+        function logoutAdmin() {
+            if (confirm('Deseja sair do painel admin?')) {
+                auth.signOut();
+                document.getElementById('loginSection').classList.remove('hidden');
+                document.getElementById('adminSection').classList.remove('active');
+                
+                // Limpar campos
+                document.getElementById('adminEmail').value = '';
+                document.getElementById('adminPassword').value = '';
+            }
+        }
+
+        // Cadastrar novo aluno
+        async function addStudent() {
+            const email = document.getElementById('studentEmail').value;
+            const password = document.getElementById('studentPassword').value;
+            const messageDiv = document.getElementById('addMessage');
+
+            if (!email || !password) {
+                showMessage(messageDiv, 'Por favor, preencha email e senha do aluno.', 'error');
+                return;
+            }
+
+            if (password.length < 6) {
+                showMessage(messageDiv, 'A senha deve ter no mínimo 6 caracteres.', 'error');
+                return;
+            }
+
+            try {
+                // Criar usuário no Firebase
+                await auth.createUserWithEmailAndPassword(email, password);
+                
+                showMessage(messageDiv, `✅ Aluno ${email} cadastrado com sucesso!`, 'success');
+                
+                // Limpar campos
+                document.getElementById('studentEmail').value = '';
+                document.getElementById('studentPassword').value = '';
+                
+                // Atualizar lista
+                setTimeout(() => {
+                    loadUsers();
+                }, 1000);
+                
+            } catch (error) {
+                let errorText = 'Erro ao cadastrar aluno.';
+                
+                if (error.code === 'auth/email-already-in-use') {
+                    errorText = 'Este email já está cadastrado.';
+                } else if (error.code === 'auth/invalid-email') {
+                    errorText = 'Email inválido.';
+                } else if (error.code === 'auth/weak-password') {
+                    errorText = 'Senha muito fraca. Use no mínimo 6 caracteres.';
+                }
+                
+                showMessage(messageDiv, errorText, 'error');
+            }
+        }
+
+        // Carregar lista de usuários
+        async function loadUsers() {
+            const userListDiv = document.getElementById('userList');
+            
+            try {
+                // Nota: Firebase Authentication não permite listar usuários diretamente do cliente
+                // Você precisaria usar o Admin SDK no backend ou Firebase Functions
+                // Para simplificar, vamos mostrar uma mensagem informativa
+                
+                userListDiv.innerHTML = `
+                    <div class="info-box">
+                        <h3>ℹ️ Gerenciamento de Usuários</h3>
+                        <p>Para visualizar e gerenciar a lista completa de alunos cadastrados, você precisa:</p>
+                        <ul>
+                            <li>Acessar o <a href="https://console.firebase.google.com" target="_blank" style="color: #064420; font-weight: 600;">Firebase Console</a></li>
+                            <li>Ir em <strong>Authentication → Users</strong></li>
+                            <li>Lá você verá todos os alunos e poderá excluir acessos</li>
+                        </ul>
+                        <p style="margin-top: 15px;">
+                            <strong>Ou</strong> você pode implementar Firebase Functions para listar usuários aqui no painel.
+                        </p>
+                    </div>
+                `;
+                
+            } catch (error) {
+                userListDiv.innerHTML = `<p style="color: #dc3545;">Erro ao carregar usuários.</p>`;
+            }
+        }
+
+        // Mostrar mensagem
+        function showMessage(element, text, type) {
+            element.textContent = text;
+            element.className = `message ${type} show`;
+            
+            setTimeout(() => {
+                element.classList.remove('show');
+            }, 5000);
+        }
+
+        // Verificar se já está logado
+        auth.onAuthStateChanged((user) => {
+            if (user) {
+                document.getElementById('loginSection').classList.add('hidden');
+                document.getElementById('adminSection').classList.add('active');
+                loadUsers();
+            }
+        });
+    </script>
+</body>
+</html>
