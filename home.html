@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🚀 Calculadora Meta Ads | Andromeda 2025</title>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #064420 0%, #0a6b33 100%);
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* TELA DE LOGIN */
+        .login-container {
+            max-width: 450px;
+            width: 100%;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 40px;
+            display: block;
+        }
+
+        .login-container.hidden {
+            display: none;
+        }
+
+        .login-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .login-header h1 {
+            color: #064420;
+            font-size: 1.8em;
+            margin-bottom: 10px;
+        }
+
+        .login-header p {
+            color: #666;
+            font-size: 0.95em;
+        }
+
+        .badge {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.75em;
+            margin-top: 10px;
+        }
+
+        .login-form {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .form-field {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-field label {
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+        }
+
+        .form-field input {
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: all 0.3s;
+        }
+
+        .form-field input:focus {
+            outline: none;
+            border-color: #064420;
+            box-shadow: 0 0 0 3px rgba(6, 68, 32, 0.1);
+        }
+
+        .btn-login {
+            padding: 15px;
+            background: linear-gradient(135deg, #064420 0%, #0a6b33 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-login:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(6, 68, 32, 0.3);
+        }
+
+        .btn-login:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .forgot-password {
+            text-align: center;
+            margin-top: 15px;
+        }
+
+        .forgot-password a {
+            color: #064420;
+            text-decoration: none;
+            font-size: 0.9em;
+            transition: all 0.3s;
+        }
+
+        .forgot-password a:hover {
+            text-decoration: underline;
+        }
+
+        .error-message, .success-message {
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 0.9em;
+            display: none;
+            margin-bottom: 15px;
+        }
+
+        .error-message {
+            background: #fee;
+            border: 1px solid #fcc;
+            color: #c33;
+        }
+
+        .success-message {
+            background: #e8f5e9;
+            border: 1px solid #c8e6c9;
+            color: #2e7d32;
+        }
+
+        .error-message.show, .success-message.show {
+            display: block;
+        }
+
+        /* SELEÇÃO DE MODO */
+        .mode-container {
+            max-width: 1000px;
+            width: 100%;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 40px;
+            display: none;
+        }
+
+        .mode-container.active {
+            display: block;
+        }
+
+        .mode-header {
+            text-align: center;
+            margin-bottom: 40px;
+            position: relative;
+        }
+
+        .mode-header h1 {
+            color: #064420;
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+
+        .mode-header p {
+            color: #666;
+            font-size: 1.1em;
+        }
+
+        .logout-btn {
+            position: absolute;
+            top: 0;
+            right: 0;
+            background: #f0f0f0;
+            color: #333;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: all 0.3s;
+        }
+
+        .logout-btn:hover {
+            background: #e0e0e0;
+        }
+
+        .user-info {
+            color: #666;
+            font-size: 0.9em;
+            margin-top: 10px;
+        }
+
+        .mode-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin-top: 30px;
+        }
+
+        .mode-card {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 40px 30px;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 3px solid transparent;
+            text-align: center;
+        }
+
+        .mode-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.2);
+            border-color: #064420;
+            background: white;
+        }
+
+        .mode-card-icon {
+            font-size: 4em;
+            margin-bottom: 20px;
+        }
+
+        .mode-card h3 {
+            color: #064420;
+            font-size: 1.5em;
+            margin-bottom: 15px;
+        }
+
+        .mode-card p {
+            color: #666;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+
+        .mode-card .features {
+            text-align: left;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 2px solid #e0e0e0;
+        }
+
+        .mode-card .features ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .mode-card .features li {
+            padding: 8px 0;
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .mode-card .features li:before {
+            content: "✓ ";
+            color: #064420;
+            font-weight: bold;
+            margin-right: 8px;
+        }
+
+        .mode-badge {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.75em;
+            font-weight: 600;
+            margin-top: 15px;
+        }
+
+        .badge-new {
+            background: #ff9800;
+            color: white;
+        }
+
+        .badge-recommended {
+            background: #064420;
+            color: white;
+        }
+
+        .info-box {
+            background: #e8f5e9;
+            border-left: 4px solid #064420;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 40px;
+        }
+
+        .info-box h4 {
+            color: #064420;
+            margin-bottom: 10px;
+        }
+
+        /* MODAL REDEFINIR SENHA */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 15px;
+            padding: 40px;
+            max-width: 450px;
+            width: 90%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            position: relative;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: none;
+            border: none;
+            font-size: 1.5em;
+            cursor: pointer;
+            color: #999;
+            transition: all 0.3s;
+        }
+
+        .modal-close:hover {
+            color: #333;
+        }
+
+        .modal-header {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        .modal-header h2 {
+            color: #064420;
+            margin-bottom: 10px;
+        }
+
+        .modal-header p {
+            color: #666;
+            font-size: 0.95em;
+        }
+
+        @media (max-width: 768px) {
+            .mode-cards {
+                grid-template-columns: 1fr;
+            }
+
+            .logout-btn {
+                position: static;
+                width: 100%;
+                margin-top: 20px;
+            }
+
+            .mode-header h1 {
+                font-size: 1.5em;
+            }
+
+            body {
+                padding: 10px;
+            }
+
+            .login-container, .mode-container {
+                padding: 25px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- TELA DE LOGIN -->
+    <div id="loginContainer" class="login-container">
+        <div class="login-header">
+            <h1>🚀 Calculadora Meta Ads</h1>
+            <p>Ferramentas profissionais para suas campanhas</p>
+            <span class="badge">✨ Andromeda 2025</span>
+        </div>
+        
+        <form id="loginForm" class="login-form">
+            <div id="errorMessage" class="error-message"></div>
+            <div id="successMessage" class="success-message"></div>
+            
+            <div class="form-field">
+                <label for="emailInput">Email</label>
+                <input type="email" id="emailInput" required placeholder="seu@email.com">
+            </div>
+            
+            <div class="form-field">
+                <label for="passwordInput">Senha</label>
+                <input type="password" id="passwordInput" required placeholder="Sua senha">
+            </div>
+            
+            <button type="submit" class="btn-login" id="loginBtn">
+                Entrar
+            </button>
+
+            <div class="forgot-password">
+                <a href="#" onclick="openResetPasswordModal(); return false;">Esqueci minha senha</a>
+            </div>
+        </form>
+    </div>
+
+    <!-- SELEÇÃO DE MODO -->
+    <div id="modeContainer" class="mode-container">
+        <div class="mode-header">
+            <button class="logout-btn" onclick="logout()">Sair</button>
+            <h1>📊 Bem-vindo(a)!</h1>
+            <p>Escolha como deseja usar a ferramenta</p>
+            <div class="user-info" id="userInfo"></div>
+        </div>
+
+        <div class="mode-cards">
+            <div class="mode-card" onclick="goToSimulation()">
+                <div class="mode-card-icon">🎯</div>
+                <h3>Simulação de Campanha</h3>
+                <p>Calcule os benchmarks ideais para sua nova campanha com base no seu produto, margem e objetivos.</p>
+                <span class="mode-badge badge-recommended">Recomendado para iniciantes</span>
+                
+                <div class="features">
+                    <strong>O que você vai fazer:</strong>
+                    <ul>
+                        <li>Informar dados do produto</li>
+                        <li>Definir margens e custos</li>
+                        <li>Receber benchmarks personalizados</li>
+                        <li>Ver métricas tier 1, 2 e 3</li>
+                        <li>Checklist Andromeda 2025</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="mode-card" onclick="goToAnalysis()">
+                <div class="mode-card-icon">📊</div>
+                <h3>Análise de Campanha Real</h3>
+                <p>Faça upload do CSV do Meta Ads e receba diagnóstico completo com prioridades de otimização.</p>
+                <span class="mode-badge badge-new">✨ NOVO - Andromeda</span>
+                
+                <div class="features">
+                    <strong>O que você vai fazer:</strong>
+                    <ul>
+                        <li>Upload de CSV ou Excel</li>
+                        <li>Análise de cada campanha separada</li>
+                        <li>Diagnóstico por prioridade</li>
+                        <li>Ações específicas por campanha</li>
+                        <li>Comparação com benchmarks 2025</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="info-box">
+            <h4>🚀 Atualizado para Meta Andromeda 2025</h4>
+            <p><strong>O que mudou:</strong> O algoritmo agora prioriza diversidade criativa ao invés de segmentação manual. Ambas as ferramentas foram completamente atualizadas com os novos benchmarks e recomendações específicas para Andromeda.</p>
+            <p style="margin-top: 10px;"><strong>Principais mudanças:</strong></p>
+            <ul style="padding-left: 20px; line-height: 1.8; margin-top: 10px;">
+                <li>✅ Targeting amplo funciona melhor que segmentação estreita</li>
+                <li>✅ Precisa de 10-50 criativos diferentes (não só variações pequenas)</li>
+                <li>✅ 1 campanha grande é melhor que várias pequenas</li>
+                <li>✅ CTR médio subiu para 1.5-2% (era 0.9%)</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- MODAL REDEFINIR SENHA -->
+    <div id="resetPasswordModal" class="modal">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeResetPasswordModal()">×</button>
+            <div class="modal-header">
+                <h2>🔑 Redefinir Senha</h2>
+                <p>Enviaremos um link para redefinir sua senha</p>
+            </div>
+
+            <div id="resetErrorMessage" class="error-message"></div>
+            <div id="resetSuccessMessage" class="success-message"></div>
+
+            <form id="resetPasswordForm" class="login-form">
+                <div class="form-field">
+                    <label for="resetEmailInput">Email</label>
+                    <input type="email" id="resetEmailInput" required placeholder="seu@email.com">
+                </div>
+
+                <button type="submit" class="btn-login" id="resetBtn">
+                    Enviar Link de Redefinição
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // ==========================================
+        // CONFIGURAÇÃO DO FIREBASE
+        // ==========================================
+        const firebaseConfig = {
+  apiKey: "AIzaSyD3SmM1glMqRWj08ZQHb1Sc6DuqFKjPDjk",
+  authDomain: "calculadora-de-trafego.firebaseapp.com",
+  projectId: "calculadora-de-trafego",
+  storageBucket: "calculadora-de-trafego.firebasestorage.app",
+  messagingSenderId: "828628883417",
+  appId: "1:828628883417:web:009f8b28033854b3722bc8",
+  measurementId: "G-EM1BVLL3KE"
+};
+
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+
+        // ==========================================
+        // AUTENTICAÇÃO
+        // ==========================================
+        
+        auth.onAuthStateChanged((user) => {
+            if (user) {
+                showModeSelection(user);
+            } else {
+                showLogin();
+            }
+        });
+
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const email = document.getElementById('emailInput').value;
+            const password = document.getElementById('passwordInput').value;
+            const loginBtn = document.getElementById('loginBtn');
+            const errorMessage = document.getElementById('errorMessage');
+            const successMessage = document.getElementById('successMessage');
+            
+            loginBtn.disabled = true;
+            loginBtn.textContent = 'Entrando...';
+            errorMessage.classList.remove('show');
+            successMessage.classList.remove('show');
+            
+            try {
+                await auth.signInWithEmailAndPassword(email, password);
+            } catch (error) {
+                let errorText = 'Erro ao fazer login. Verifique suas credenciais.';
+                
+                if (error.code === 'auth/user-not-found') {
+                    errorText = 'Usuário não encontrado. Verifique seu email.';
+                } else if (error.code === 'auth/wrong-password') {
+                    errorText = 'Senha incorreta.';
+                } else if (error.code === 'auth/invalid-email') {
+                    errorText = 'Email inválido.';
+                } else if (error.code === 'auth/too-many-requests') {
+                    errorText = 'Muitas tentativas. Tente novamente mais tarde.';
+                }
+                
+                errorMessage.textContent = errorText;
+                errorMessage.classList.add('show');
+                
+                loginBtn.disabled = false;
+                loginBtn.textContent = 'Entrar';
+            }
+        });
+
+        function logout() {
+            if (confirm('Deseja realmente sair?')) {
+                auth.signOut();
+            }
+        }
+
+        function showLogin() {
+            document.getElementById('loginContainer').classList.remove('hidden');
+            document.getElementById('modeContainer').classList.remove('active');
+        }
+
+        function showModeSelection(user) {
+            document.getElementById('loginContainer').classList.add('hidden');
+            document.getElementById('modeContainer').classList.add('active');
+            document.getElementById('userInfo').textContent = `👤 ${user.email}`;
+        }
+
+        // ==========================================
+        // NAVEGAÇÃO ENTRE PÁGINAS
+        // ==========================================
+        
+        function goToSimulation() {
+            window.location.href = 'index.html';
+        }
+
+        function goToAnalysis() {
+            window.location.href = 'analise.html';
+        }
+
+        // ==========================================
+        // REDEFINIR SENHA
+        // ==========================================
+        
+        function openResetPasswordModal() {
+            document.getElementById('resetPasswordModal').classList.add('active');
+            document.getElementById('resetEmailInput').value = '';
+            document.getElementById('resetErrorMessage').classList.remove('show');
+            document.getElementById('resetSuccessMessage').classList.remove('show');
+        }
+
+        function closeResetPasswordModal() {
+            document.getElementById('resetPasswordModal').classList.remove('active');
+        }
+
+        document.getElementById('resetPasswordForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const email = document.getElementById('resetEmailInput').value;
+            const resetBtn = document.getElementById('resetBtn');
+            const resetErrorMessage = document.getElementById('resetErrorMessage');
+            const resetSuccessMessage = document.getElementById('resetSuccessMessage');
+            
+            resetBtn.disabled = true;
+            resetBtn.textContent = 'Enviando...';
+            resetErrorMessage.classList.remove('show');
+            resetSuccessMessage.classList.remove('show');
+            
+            try {
+                await auth.sendPasswordResetEmail(email);
+                
+                resetSuccessMessage.textContent = '✅ Email enviado! Verifique sua caixa de entrada e spam.';
+                resetSuccessMessage.classList.add('show');
+                
+                resetBtn.textContent = 'Email Enviado!';
+                
+                setTimeout(() => {
+                    closeResetPasswordModal();
+                }, 3000);
+                
+            } catch (error) {
+                let errorText = 'Erro ao enviar email. Tente novamente.';
+                
+                if (error.code === 'auth/user-not-found') {
+                    errorText = 'Email não encontrado. Verifique o endereço.';
+                } else if (error.code === 'auth/invalid-email') {
+                    errorText = 'Email inválido.';
+                } else if (error.code === 'auth/too-many-requests') {
+                    errorText = 'Muitas tentativas. Aguarde alguns minutos.';
+                }
+                
+                resetErrorMessage.textContent = errorText;
+                resetErrorMessage.classList.add('show');
+                
+                resetBtn.disabled = false;
+                resetBtn.textContent = 'Enviar Link de Redefinição';
+            }
+        });
+
+        // Fechar modal ao clicar fora
+        document.getElementById('resetPasswordModal').addEventListener('click', (e) => {
+            if (e.target.id === 'resetPasswordModal') {
+                closeResetPasswordModal();
+            }
+        });
+    </script>
+</body>
+</html>

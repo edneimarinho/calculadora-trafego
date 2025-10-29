@@ -1,0 +1,1937 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📊 Análise de Campanha Meta Ads | Andromeda 2025</title>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    
+    <!-- PapaParse para CSV -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    
+    <!-- SheetJS para Excel -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #064420 0%, #0a6b33 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .login-container {
+            max-width: 450px;
+            margin: 100px auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 40px;
+            display: block;
+        }
+
+        .login-container.hidden {
+            display: none;
+        }
+
+        .login-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .login-header h1 {
+            color: #064420;
+            font-size: 1.8em;
+            margin-bottom: 10px;
+        }
+
+        .login-header p {
+            color: #666;
+            font-size: 0.95em;
+        }
+
+        .login-form {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .form-field {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-field label {
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+        }
+
+        .form-field input {
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: all 0.3s;
+        }
+
+        .form-field input:focus {
+            outline: none;
+            border-color: #064420;
+            box-shadow: 0 0 0 3px rgba(6, 68, 32, 0.1);
+        }
+
+        .btn-login {
+            padding: 15px;
+            background: linear-gradient(135deg, #064420 0%, #0a6b33 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-login:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(6, 68, 32, 0.3);
+        }
+
+        .btn-login:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .error-message {
+            background: #fee;
+            border: 1px solid #fcc;
+            color: #c33;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 0.9em;
+            display: none;
+        }
+
+        .error-message.show {
+            display: block;
+        }
+
+        /* CONTAINER PRINCIPAL */
+        .main-container {
+            display: none;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .main-container.active {
+            display: block;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+            margin-bottom: 30px;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #064420 0%, #0a6b33 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+            position: relative;
+        }
+
+        .header h1 {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
+
+        .header .subtitle {
+            font-size: 0.85em;
+            opacity: 0.8;
+            margin-top: 5px;
+        }
+
+        .logout-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: 1px solid rgba(255,255,255,0.3);
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: all 0.3s;
+        }
+
+        .logout-btn:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        .user-info {
+            position: absolute;
+            bottom: 10px;
+            left: 20px;
+            color: white;
+            font-size: 0.85em;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        /* UPLOAD AREA */
+        .upload-section {
+            display: block;
+        }
+
+        .upload-section.hidden {
+            display: none;
+        }
+
+        .upload-area {
+            border: 3px dashed #064420;
+            border-radius: 15px;
+            padding: 60px 40px;
+            text-align: center;
+            background: #f8f9fa;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin: 30px 0;
+        }
+
+        .upload-area:hover {
+            background: #e8f5e9;
+            border-color: #0a6b33;
+        }
+
+        .upload-area.drag-over {
+            background: #e8f5e9;
+            border-color: #0a6b33;
+            transform: scale(1.02);
+        }
+
+        .upload-icon {
+            font-size: 4em;
+            margin-bottom: 20px;
+            color: #064420;
+        }
+
+        .upload-area h3 {
+            color: #064420;
+            margin-bottom: 10px;
+            font-size: 1.5em;
+        }
+
+        .upload-area p {
+            color: #666;
+            font-size: 1em;
+            line-height: 1.6;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .info-box {
+            background: #e8f5e9;
+            border-left: 4px solid #064420;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+
+        .info-box h4 {
+            color: #064420;
+            margin-bottom: 10px;
+        }
+
+        .info-box ul {
+            padding-left: 20px;
+            line-height: 1.8;
+        }
+
+        .info-box ul li {
+            margin-bottom: 8px;
+        }
+
+        .warning-box {
+            background: #fff3e0;
+            border-left: 4px solid #ff9800;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+
+        .warning-box h4 {
+            color: #e65100;
+            margin-bottom: 10px;
+        }
+
+        /* RESULTADOS */
+        .results-section {
+            display: none;
+        }
+
+        .results-section.active {
+            display: block;
+        }
+
+        .diagnosis-card {
+            background: white;
+            border-left: 5px solid;
+            padding: 25px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .diagnosis-critical {
+            border-color: #f44336;
+            background: #ffebee;
+        }
+
+        .diagnosis-warning {
+            border-color: #ff9800;
+            background: #fff3e0;
+        }
+
+        .diagnosis-good {
+            border-color: #4caf50;
+            background: #e8f5e9;
+        }
+
+        .diagnosis-excellent {
+            border-color: #2196f3;
+            background: #e3f2fd;
+        }
+
+        .diagnosis-card h3 {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+
+        .priority-badge {
+            display: inline-block;
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 35px;
+            font-weight: bold;
+            margin-right: 15px;
+            font-size: 1em;
+        }
+
+        .priority-1 { background: #f44336; color: white; }
+        .priority-2 { background: #ff9800; color: white; }
+        .priority-3 { background: #ffc107; color: white; }
+        .priority-4 { background: #4caf50; color: white; }
+
+        .metric-comparison {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin: 15px 0;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+        }
+
+        .metric-item {
+            text-align: center;
+        }
+
+        .metric-label {
+            font-size: 0.85em;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .metric-value {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .metric-status {
+            font-size: 0.8em;
+            margin-top: 5px;
+            padding: 3px 10px;
+            border-radius: 12px;
+            display: inline-block;
+        }
+
+        .status-critical { background: #ffcdd2; color: #c62828; }
+        .status-warning { background: #ffe0b2; color: #e65100; }
+        .status-good { background: #c8e6c9; color: #2e7d32; }
+        .status-excellent { background: #bbdefb; color: #1565c0; }
+
+        .action-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .action-list li {
+            padding: 12px;
+            margin: 10px 0;
+            background: white;
+            border-radius: 8px;
+            border-left: 4px solid #064420;
+        }
+
+        .action-list li strong {
+            color: #064420;
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+
+        .summary-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .summary-card h4 {
+            color: #666;
+            font-size: 0.9em;
+            margin-bottom: 10px;
+        }
+
+        .summary-card .value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #064420;
+        }
+
+        .checklist {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+
+        .checklist h3 {
+            color: #064420;
+            margin-bottom: 20px;
+        }
+
+        .checklist-item {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            margin: 10px 0;
+            border-radius: 8px;
+            background: #f8f9fa;
+        }
+
+        .checklist-icon {
+            font-size: 1.5em;
+            margin-right: 15px;
+            min-width: 30px;
+        }
+
+        .btn-new-analysis {
+            display: block;
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #064420 0%, #0a6b33 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 30px;
+        }
+
+        .btn-new-analysis:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(6, 68, 32, 0.3);
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            font-size: 1.2em;
+            color: #064420;
+        }
+
+        .loading-spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #064420;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 1.5em;
+            }
+
+            .content {
+                padding: 20px;
+            }
+
+            .logout-btn, .user-info {
+                position: static;
+                margin-top: 10px;
+                display: block;
+                width: 100%;
+            }
+
+            .metric-comparison {
+                grid-template-columns: 1fr;
+            }
+
+            .summary-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- TELA DE LOGIN -->
+    <div id="loginContainer" class="login-container">
+        <div class="login-header">
+            <h1>🔐 Analisador de Campanhas</h1>
+            <p>Faça login para analisar suas campanhas</p>
+        </div>
+        
+        <form id="loginForm" class="login-form">
+            <div id="errorMessage" class="error-message"></div>
+            
+            <div class="form-field">
+                <label for="emailInput">Email</label>
+                <input type="email" id="emailInput" required placeholder="seu@email.com">
+            </div>
+            
+            <div class="form-field">
+                <label for="passwordInput">Senha</label>
+                <input type="password" id="passwordInput" required placeholder="Sua senha">
+            </div>
+            
+            <button type="submit" class="btn-login" id="loginBtn">
+                Entrar
+            </button>
+
+            <div style="text-align: center; margin-top: 15px;">
+                <a href="#" onclick="openResetPasswordModal(); return false;" style="color: #064420; text-decoration: none; font-size: 0.9em;">Esqueci minha senha</a>
+            </div>
+        </form>
+    </div>
+
+    <!-- MODAL REDEFINIR SENHA -->
+    <div id="resetPasswordModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
+        <div style="background: white; border-radius: 15px; padding: 40px; max-width: 450px; width: 90%; box-shadow: 0 20px 60px rgba(0,0,0,0.3); position: relative;">
+            <button onclick="closeResetPasswordModal()" style="position: absolute; top: 15px; right: 15px; background: none; border: none; font-size: 1.5em; cursor: pointer; color: #999;">×</button>
+            
+            <div style="text-align: center; margin-bottom: 25px;">
+                <h2 style="color: #064420; margin-bottom: 10px;">🔑 Redefinir Senha</h2>
+                <p style="color: #666; font-size: 0.95em;">Enviaremos um link para redefinir sua senha</p>
+            </div>
+
+            <div id="resetErrorMessage" class="error-message"></div>
+            <div id="resetSuccessMessage" style="background: #e8f5e9; border: 1px solid #c8e6c9; color: #2e7d32; padding: 12px; border-radius: 8px; font-size: 0.9em; display: none; margin-bottom: 15px;"></div>
+
+            <form id="resetPasswordForm" style="display: flex; flex-direction: column; gap: 20px;">
+                <div class="form-field">
+                    <label for="resetEmailInput">Email</label>
+                    <input type="email" id="resetEmailInput" required placeholder="seu@email.com">
+                </div>
+
+                <button type="submit" class="btn-login" id="resetBtn">
+                    Enviar Link de Redefinição
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- CONTAINER PRINCIPAL -->
+    <div id="mainContainer" class="main-container">
+        <div class="container">
+            <div class="header">
+                <div class="user-info" id="userInfo"></div>
+                <button class="logout-btn" onclick="logout()">Sair</button>
+                <h1>📊 Análise de Campanha Meta Ads</h1>
+                <p>Faça upload dos dados e receba diagnóstico completo</p>
+                <p class="subtitle">✨ Atualizado para Meta Andromeda 2025</p>
+            </div>
+
+            <!-- SEÇÃO DE UPLOAD -->
+            <div id="uploadSection" class="content upload-section">
+                <div class="info-box">
+                    <h4>📤 Como funciona:</h4>
+                    <ul>
+                        <li><strong>1.</strong> Exporte os dados da sua campanha do Meta Ads (formato CSV ou Excel)</li>
+                        <li><strong>2.</strong> Faça upload do arquivo aqui</li>
+                        <li><strong>3.</strong> Receba diagnóstico completo com prioridades de otimização</li>
+                    </ul>
+                </div>
+
+                <div class="warning-box">
+                    <h4>⚠️ Colunas necessárias no arquivo:</h4>
+                    <p><strong>Obrigatórias:</strong> CTR, CPC, CPA (ou Custo por Resultado), Gasto, Conversões (ou Resultados)</p>
+                    <p style="margin-top: 10px;"><strong>Opcionais (melhora análise):</strong> ROAS, CPM, Frequência, Impressões, Alcance, Cliques</p>
+                </div>
+
+                <div class="upload-area" id="uploadArea">
+                    <div class="upload-icon">📁</div>
+                    <h3>Arraste seu arquivo aqui</h3>
+                    <p>ou clique para selecionar</p>
+                    <p style="margin-top: 10px; font-size: 0.9em; color: #999;">Formatos aceitos: CSV, Excel (.xlsx, .xls)</p>
+                </div>
+
+                <input type="file" id="fileInput" class="file-input" accept=".csv,.xlsx,.xls">
+
+                <div class="info-box" style="margin-top: 30px;">
+                    <h4>💡 Dica:</h4>
+                    <p>No Meta Ads Manager, vá em <strong>Relatórios → Exportar dados da tabela</strong> e selecione formato CSV ou Excel.</p>
+                </div>
+            </div>
+
+            <!-- SEÇÃO DE RESULTADOS -->
+            <div id="resultsSection" class="content results-section">
+                <!-- Conteúdo será gerado via JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==========================================
+        // CONFIGURAÇÃO DO FIREBASE
+        // ==========================================
+        const firebaseConfig = {
+  apiKey: "AIzaSyD3SmM1glMqRWj08ZQHb1Sc6DuqFKjPDjk",
+  authDomain: "calculadora-de-trafego.firebaseapp.com",
+  projectId: "calculadora-de-trafego",
+  storageBucket: "calculadora-de-trafego.firebasestorage.app",
+  messagingSenderId: "828628883417",
+  appId: "1:828628883417:web:009f8b28033854b3722bc8",
+  measurementId: "G-EM1BVLL3KE"
+};
+
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+
+        // ==========================================
+        // AUTENTICAÇÃO
+        // ==========================================
+        
+        auth.onAuthStateChanged((user) => {
+            if (user) {
+                showMainContainer(user);
+            } else {
+                showLogin();
+            }
+        });
+
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const email = document.getElementById('emailInput').value;
+            const password = document.getElementById('passwordInput').value;
+            const loginBtn = document.getElementById('loginBtn');
+            const errorMessage = document.getElementById('errorMessage');
+            
+            loginBtn.disabled = true;
+            loginBtn.textContent = 'Entrando...';
+            errorMessage.classList.remove('show');
+            
+            try {
+                await auth.signInWithEmailAndPassword(email, password);
+            } catch (error) {
+                let errorText = 'Erro ao fazer login. Verifique suas credenciais.';
+                
+                if (error.code === 'auth/user-not-found') {
+                    errorText = 'Usuário não encontrado. Verifique seu email.';
+                } else if (error.code === 'auth/wrong-password') {
+                    errorText = 'Senha incorreta.';
+                } else if (error.code === 'auth/invalid-email') {
+                    errorText = 'Email inválido.';
+                } else if (error.code === 'auth/too-many-requests') {
+                    errorText = 'Muitas tentativas. Tente novamente mais tarde.';
+                }
+                
+                errorMessage.textContent = errorText;
+                errorMessage.classList.add('show');
+                
+                loginBtn.disabled = false;
+                loginBtn.textContent = 'Entrar';
+            }
+        });
+
+        function logout() {
+            if (confirm('Deseja realmente sair?')) {
+                auth.signOut();
+            }
+        }
+
+        // ==========================================
+        // REDEFINIR SENHA
+        // ==========================================
+        
+        function openResetPasswordModal() {
+            const modal = document.getElementById('resetPasswordModal');
+            modal.style.display = 'flex';
+            document.getElementById('resetEmailInput').value = '';
+            document.getElementById('resetErrorMessage').classList.remove('show');
+            const successMsg = document.getElementById('resetSuccessMessage');
+            successMsg.style.display = 'none';
+        }
+
+        function closeResetPasswordModal() {
+            document.getElementById('resetPasswordModal').style.display = 'none';
+        }
+
+        document.getElementById('resetPasswordForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const email = document.getElementById('resetEmailInput').value;
+            const resetBtn = document.getElementById('resetBtn');
+            const resetErrorMessage = document.getElementById('resetErrorMessage');
+            const resetSuccessMessage = document.getElementById('resetSuccessMessage');
+            
+            resetBtn.disabled = true;
+            resetBtn.textContent = 'Enviando...';
+            resetErrorMessage.classList.remove('show');
+            resetSuccessMessage.style.display = 'none';
+            
+            try {
+                await auth.sendPasswordResetEmail(email);
+                
+                resetSuccessMessage.textContent = '✅ Email enviado! Verifique sua caixa de entrada e spam.';
+                resetSuccessMessage.style.display = 'block';
+                
+                resetBtn.textContent = 'Email Enviado!';
+                
+                setTimeout(() => {
+                    closeResetPasswordModal();
+                    resetBtn.disabled = false;
+                    resetBtn.textContent = 'Enviar Link de Redefinição';
+                }, 3000);
+                
+            } catch (error) {
+                let errorText = 'Erro ao enviar email. Tente novamente.';
+                
+                if (error.code === 'auth/user-not-found') {
+                    errorText = 'Email não encontrado. Verifique o endereço.';
+                } else if (error.code === 'auth/invalid-email') {
+                    errorText = 'Email inválido.';
+                } else if (error.code === 'auth/too-many-requests') {
+                    errorText = 'Muitas tentativas. Aguarde alguns minutos.';
+                }
+                
+                resetErrorMessage.textContent = errorText;
+                resetErrorMessage.classList.add('show');
+                
+                resetBtn.disabled = false;
+                resetBtn.textContent = 'Enviar Link de Redefinição';
+            }
+        });
+
+        // Fechar modal ao clicar fora
+        document.getElementById('resetPasswordModal').addEventListener('click', (e) => {
+            if (e.target.id === 'resetPasswordModal') {
+                closeResetPasswordModal();
+            }
+        });
+
+        function showLogin() {
+            document.getElementById('loginContainer').classList.remove('hidden');
+            document.getElementById('mainContainer').classList.remove('active');
+        }
+
+        function showMainContainer(user) {
+            document.getElementById('loginContainer').classList.add('hidden');
+            document.getElementById('mainContainer').classList.add('active');
+            document.getElementById('userInfo').textContent = `👤 ${user.email}`;
+        }
+
+        // ==========================================
+        // UPLOAD DE ARQUIVO
+        // ==========================================
+        
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+
+        uploadArea.addEventListener('click', () => {
+            fileInput.click();
+        });
+
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('drag-over');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('drag-over');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('drag-over');
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFile(files[0]);
+            }
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFile(e.target.files[0]);
+            }
+        });
+
+        // ==========================================
+        // PROCESSAMENTO DO ARQUIVO
+        // ==========================================
+        
+        function handleFile(file) {
+            const fileName = file.name.toLowerCase();
+            
+            // Mostrar loading
+            document.getElementById('uploadSection').innerHTML = `
+                <div class="loading">
+                    <div class="loading-spinner"></div>
+                    <p>Analisando seu arquivo...</p>
+                    <p style="font-size: 0.9em; color: #666; margin-top: 10px;">Isso pode levar alguns segundos</p>
+                </div>
+            `;
+
+            if (fileName.endsWith('.csv')) {
+                processCSV(file);
+            } else if (fileName.endsWith('.xlsx') || fileName.endsWith('.xls')) {
+                processExcel(file);
+            } else {
+                alert('Formato não suportado. Use CSV ou Excel (.xlsx, .xls)');
+                location.reload();
+            }
+        }
+
+        function processCSV(file) {
+            Papa.parse(file, {
+                header: true,
+                skipEmptyLines: true,
+                complete: function(results) {
+                    analyzeData(results.data);
+                },
+                error: function(error) {
+                    alert('Erro ao ler arquivo CSV: ' + error.message);
+                    location.reload();
+                }
+            });
+        }
+
+        function processExcel(file) {
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, {type: 'array'});
+                    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const jsonData = XLSX.utils.sheet_to_json(firstSheet);
+                    
+                    analyzeData(jsonData);
+                } catch (error) {
+                    alert('Erro ao ler arquivo Excel: ' + error.message);
+                    location.reload();
+                }
+            };
+            
+            reader.readAsArrayBuffer(file);
+        }
+
+        // ==========================================
+        // ANÁLISE DOS DADOS
+        // ==========================================
+        
+        function analyzeData(data) {
+            if (!data || data.length === 0) {
+                alert('Arquivo vazio ou sem dados válidos.');
+                location.reload();
+                return;
+            }
+
+            // Detectar nomes de colunas (Meta Ads usa nomes em português e inglês)
+            const firstRow = data[0];
+            const columns = Object.keys(firstRow);
+            
+            // Mapear colunas
+            const columnMap = mapColumns(columns);
+            
+            // Identificar coluna de nome da campanha
+            const campaignNameCol = columns.find(col => 
+                col.toLowerCase().includes('nome da campanha') || 
+                col.toLowerCase().includes('campaign name') ||
+                col.toLowerCase().includes('nome campanha')
+            );
+            
+            // Analisar cada campanha separadamente
+            const campaignAnalyses = [];
+            let totalGasto = 0;
+            let totalConversoes = 0;
+            let totalImpressoes = 0;
+            let totalCliques = 0;
+            
+            data.forEach(row => {
+                const campaignName = campaignNameCol ? row[campaignNameCol] : 'Campanha sem nome';
+                const metrics = calculateMetricsForRow(row, columnMap);
+                
+                // Acumular totais
+                totalGasto += metrics.gasto;
+                totalConversoes += metrics.conversoes;
+                totalImpressoes += metrics.impressoes;
+                totalCliques += metrics.cliques;
+                
+                campaignAnalyses.push({
+                    name: campaignName,
+                    metrics: metrics
+                });
+            });
+            
+            // Métricas globais
+            const globalMetrics = {
+                totalGasto: totalGasto,
+                totalConversoes: totalConversoes,
+                totalImpressoes: totalImpressoes,
+                totalCliques: totalCliques,
+                numCampanhas: data.length,
+                avgCTR: totalImpressoes > 0 ? (totalCliques / totalImpressoes) * 100 : 0,
+                avgCPC: totalCliques > 0 ? totalGasto / totalCliques : 0,
+                avgCPA: totalConversoes > 0 ? totalGasto / totalConversoes : 0
+            };
+            
+            // Gerar diagnóstico por campanha
+            generateCampaignDiagnosis(campaignAnalyses, globalMetrics);
+        }
+
+        function mapColumns(columns) {
+            const map = {};
+            
+            // CTR
+            const ctrCols = ['ctr', 'ctr (%)', 'taxa de cliques', 'click-through rate'];
+            map.ctr = columns.find(col => ctrCols.some(c => col.toLowerCase().includes(c)));
+            
+            // CPC
+            const cpcCols = ['cpc', 'custo por clique', 'cost per click'];
+            map.cpc = columns.find(col => cpcCols.some(c => col.toLowerCase().includes(c)));
+            
+            // CPA
+            const cpaCols = ['cpa', 'custo por resultado', 'cost per result', 'custo por aquisição'];
+            map.cpa = columns.find(col => cpaCols.some(c => col.toLowerCase().includes(c)));
+            
+            // CPM
+            const cpmCols = ['cpm', 'custo por mil impressões', 'cost per 1000 impressions'];
+            map.cpm = columns.find(col => cpmCols.some(c => col.toLowerCase().includes(c)));
+            
+            // Gasto
+            const gastoCol = ['gasto', 'valor gasto', 'spend', 'amount spent'];
+            map.gasto = columns.find(col => gastoCol.some(c => col.toLowerCase().includes(c)));
+            
+            // Conversões
+            const convCols = ['conversões', 'resultados', 'conversions', 'results', 'compras', 'purchases'];
+            map.conversoes = columns.find(col => convCols.some(c => col.toLowerCase().includes(c)));
+            
+            // ROAS
+            const roasCols = ['roas', 'return on ad spend', 'retorno sobre gasto'];
+            map.roas = columns.find(col => roasCols.some(c => col.toLowerCase().includes(c)));
+            
+            // Frequência
+            const freqCols = ['frequência', 'frequency', 'freq'];
+            map.frequencia = columns.find(col => freqCols.some(c => col.toLowerCase().includes(c)));
+            
+            // Impressões
+            const impCols = ['impressões', 'impressions', 'impr'];
+            map.impressoes = columns.find(col => impCols.some(c => col.toLowerCase().includes(c)));
+            
+            // Cliques
+            const clickCols = ['cliques', 'clicks', 'cliques no link'];
+            map.cliques = columns.find(col => clickCols.some(c => col.toLowerCase().includes(c)));
+            
+            // Alcance
+            const alcCols = ['alcance', 'reach'];
+            map.alcance = columns.find(col => alcCols.some(c => col.toLowerCase().includes(c)));
+
+            return map;
+        }
+
+        function parseValue(value) {
+            if (value === null || value === undefined || value === '') return 0;
+            
+            // Remover símbolos de moeda e espaços
+            let cleanValue = String(value).replace(/[R$\s%]/g, '').replace(',', '.');
+            
+            return parseFloat(cleanValue) || 0;
+        }
+
+        function calculateMetricsForRow(row, columnMap) {
+            const gasto = columnMap.gasto ? parseValue(row[columnMap.gasto]) : 0;
+            const conversoes = columnMap.conversoes ? parseValue(row[columnMap.conversoes]) : 0;
+            const impressoes = columnMap.impressoes ? parseValue(row[columnMap.impressoes]) : 0;
+            const cliques = columnMap.cliques ? parseValue(row[columnMap.cliques]) : 0;
+            const ctr = columnMap.ctr ? parseValue(row[columnMap.ctr]) : (impressoes > 0 ? (cliques / impressoes) * 100 : 0);
+            const cpc = columnMap.cpc ? parseValue(row[columnMap.cpc]) : (cliques > 0 ? gasto / cliques : 0);
+            const cpm = columnMap.cpm ? parseValue(row[columnMap.cpm]) : (impressoes > 0 ? (gasto / impressoes) * 1000 : 0);
+            const cpa = conversoes > 0 ? gasto / conversoes : 0;
+            const roas = columnMap.roas ? parseValue(row[columnMap.roas]) : 0;
+            const frequencia = columnMap.frequencia ? parseValue(row[columnMap.frequencia]) : 0;
+            
+            return {
+                gasto: gasto,
+                conversoes: conversoes,
+                impressoes: impressoes,
+                cliques: cliques,
+                ctr: ctr,
+                cpc: cpc,
+                cpm: cpm,
+                cpa: cpa,
+                roas: roas,
+                frequencia: frequencia
+            };
+        }
+
+        function calculateMetrics(data, columnMap) {
+            let totalGasto = 0;
+            let totalConversoes = 0;
+            let totalImpressoes = 0;
+            let totalCliques = 0;
+            let somaROAS = 0;
+            let somaFreq = 0;
+            let somaCTR = 0;
+            let somaCPC = 0;
+            let somaCPM = 0;
+            let countROAS = 0;
+            let countFreq = 0;
+            let countCTR = 0;
+            let countCPC = 0;
+            let countCPM = 0;
+
+            data.forEach(row => {
+                if (columnMap.gasto) totalGasto += parseValue(row[columnMap.gasto]);
+                if (columnMap.conversoes) totalConversoes += parseValue(row[columnMap.conversoes]);
+                if (columnMap.impressoes) totalImpressoes += parseValue(row[columnMap.impressoes]);
+                if (columnMap.cliques) totalCliques += parseValue(row[columnMap.cliques]);
+                
+                if (columnMap.roas) {
+                    const roas = parseValue(row[columnMap.roas]);
+                    if (roas > 0) {
+                        somaROAS += roas;
+                        countROAS++;
+                    }
+                }
+                
+                if (columnMap.frequencia) {
+                    const freq = parseValue(row[columnMap.frequencia]);
+                    if (freq > 0) {
+                        somaFreq += freq;
+                        countFreq++;
+                    }
+                }
+                
+                if (columnMap.ctr) {
+                    const ctr = parseValue(row[columnMap.ctr]);
+                    if (ctr > 0) {
+                        somaCTR += ctr;
+                        countCTR++;
+                    }
+                }
+                
+                if (columnMap.cpc) {
+                    const cpc = parseValue(row[columnMap.cpc]);
+                    if (cpc > 0) {
+                        somaCPC += cpc;
+                        countCPC++;
+                    }
+                }
+                
+                if (columnMap.cpm) {
+                    const cpm = parseValue(row[columnMap.cpm]);
+                    if (cpm > 0) {
+                        somaCPM += cpm;
+                        countCPM++;
+                    }
+                }
+            });
+
+            const avgCTR = countCTR > 0 ? somaCTR / countCTR : (totalImpressoes > 0 ? (totalCliques / totalImpressoes) * 100 : 0);
+            const avgCPC = countCPC > 0 ? somaCPC / countCPC : (totalCliques > 0 ? totalGasto / totalCliques : 0);
+            const avgCPM = countCPM > 0 ? somaCPM / countCPM : (totalImpressoes > 0 ? (totalGasto / totalImpressoes) * 1000 : 0);
+            const avgCPA = totalConversoes > 0 ? totalGasto / totalConversoes : 0;
+            const avgROAS = countROAS > 0 ? somaROAS / countROAS : 0;
+            const avgFrequencia = countFreq > 0 ? somaFreq / countFreq : 0;
+
+            const numCampanhas = data.length;
+
+            return {
+                ctr: avgCTR,
+                cpc: avgCPC,
+                cpm: avgCPM,
+                cpa: avgCPA,
+                roas: avgROAS,
+                frequencia: avgFrequencia,
+                totalGasto: totalGasto,
+                totalConversoes: totalConversoes,
+                totalImpressoes: totalImpressoes,
+                totalCliques: totalCliques,
+                numCampanhas: numCampanhas
+            };
+        }
+
+        // ==========================================
+        // GERAÇÃO DO DIAGNÓSTICO POR CAMPANHA
+        // ==========================================
+        
+        function generateCampaignDiagnosis(campaignAnalyses, globalMetrics) {
+            const benchmarks = {
+                ctr: 1.8,
+                cpc: 1.50,
+                cpm: 22.50,
+                roas: 2.5,
+                frequencia: 2.5
+            };
+
+            const resultsSection = document.getElementById('resultsSection');
+            
+            let html = `
+                <h2 style="color: #064420; margin-bottom: 30px;">📊 Análise Completa de Suas Campanhas</h2>
+
+                <div class="summary-grid">
+                    <div class="summary-card">
+                        <h4>Total de Campanhas</h4>
+                        <div class="value">${globalMetrics.numCampanhas}</div>
+                    </div>
+                    <div class="summary-card">
+                        <h4>Gasto Total</h4>
+                        <div class="value">R$ ${globalMetrics.totalGasto.toFixed(2)}</div>
+                    </div>
+                    <div class="summary-card">
+                        <h4>Conversões Totais</h4>
+                        <div class="value">${Math.round(globalMetrics.totalConversoes)}</div>
+                    </div>
+                    <div class="summary-card">
+                        <h4>CTR Médio Geral</h4>
+                        <div class="value">${globalMetrics.avgCTR.toFixed(2)}%</div>
+                    </div>
+                </div>
+
+                <h3 style="color: #064420; margin: 40px 0 20px 0;">📊 Análise Individual por Campanha</h3>
+                <p style="color: #666; margin-bottom: 30px;">Cada campanha é analisada separadamente com diagnóstico específico e ações recomendadas.</p>
+            `;
+
+            // Analisar cada campanha
+            campaignAnalyses.forEach((campaign, index) => {
+                const m = campaign.metrics;
+                const diagnoses = [];
+                
+                // Análise CTR
+                if (m.ctr > 0) {
+                    let status, priority, message, actions;
+                    if (m.ctr < benchmarks.ctr * 0.6) {
+                        status = 'critical';
+                        priority = 1;
+                        message = `CTR CRÍTICO! ${m.ctr.toFixed(2)}% está muito abaixo do ideal (${benchmarks.ctr}%). Criativos não estão chamando atenção!`;
+                        actions = [
+                            '🚨 Pause esta campanha IMEDIATAMENTE',
+                            '🎨 Crie 10-15 criativos completamente DIFERENTES',
+                            '📝 Teste headlines impactantes com números e urgência',
+                            '🎯 Revise sua oferta: está clara e atrativa?'
+                        ];
+                    } else if (m.ctr < benchmarks.ctr) {
+                        status = 'warning';
+                        priority = 2;
+                        message = `CTR abaixo do ideal (${m.ctr.toFixed(2)}% vs ${benchmarks.ctr}%). Precisa melhorar criativos.`;
+                        actions = [
+                            '🎨 Adicione 5-7 novos criativos nos próximos 7 dias',
+                            '📹 Teste vídeos curtos (15-30 seg) com hook forte',
+                            '💬 Use depoimentos de clientes (UGC)',
+                            '🔄 Teste formatos: carrossel, coleção, stories'
+                        ];
+                    } else if (m.ctr < benchmarks.ctr * 1.5) {
+                        status = 'good';
+                        priority = 4;
+                        message = `CTR BOM (${m.ctr.toFixed(2)}%)! Continue testando para melhorar.`;
+                        actions = [
+                            '✅ Continue testando 3-5 novos criativos por semana',
+                            '📊 Documente o que funciona',
+                            '🔄 Refresh a cada 14 dias'
+                        ];
+                    } else {
+                        status = 'excellent';
+                        priority = 4;
+                        message = `CTR EXCELENTE (${m.ctr.toFixed(2)}%)! Criativos funcionando muito bem!`;
+                        actions = [
+                            '🚀 Considere escalar budget em 20-30%',
+                            '✅ Continue testando novos criativos',
+                            '📈 Mantenha documentação do que funciona'
+                        ];
+                    }
+                    diagnoses.push({ metric: 'CTR', status, priority, current: `${m.ctr.toFixed(2)}%`, benchmark: `${benchmarks.ctr}%`, message, actions });
+                }
+
+                // Análise Frequência
+                if (m.frequencia > 0) {
+                    let status, priority, message, actions;
+                    if (m.frequencia > 4.0) {
+                        status = 'critical';
+                        priority = 1;
+                        message = `FADIGA CRÍTICA! Frequência ${m.frequencia.toFixed(1)} está MUITO ALTA. Pessoas vendo mesmo anúncio muitas vezes!`;
+                        actions = [
+                            '🚨 PAUSE e troque TODOS os criativos',
+                            '🎨 Prepare 10-15 criativos NOVOS antes de religar',
+                            '🔄 Expanda público (estava muito pequeno)',
+                            '📊 Adicione exclusões de quem já comprou'
+                        ];
+                    } else if (m.frequencia > 2.5) {
+                        status = 'warning';
+                        priority = 2;
+                        message = `Frequência alta (${m.frequencia.toFixed(1)} vs ideal 1.5-2.5). Prepare novos criativos!`;
+                        actions = [
+                            '⚠️ Prepare 5-7 criativos novos para próximos 7 dias',
+                            '🎨 Não espere chegar em 4.0',
+                            '📊 Considere expandir público',
+                            '🔄 Rotacione: pause criativos antigos'
+                        ];
+                    } else if (m.frequencia > 1.5) {
+                        status = 'good';
+                        priority = 4;
+                        message = `Frequência BOA (${m.frequencia.toFixed(1)}). No ponto ideal!`;
+                        actions = ['✅ Monitore semanalmente', '🔄 Continue refresh a cada 14 dias'];
+                    } else {
+                        status = 'excellent';
+                        priority = 4;
+                        message = `Frequência EXCELENTE (${m.frequencia.toFixed(1)}). Anúncios frescos!`;
+                        actions = ['✅ Continue assim!', '📊 Monitore semanalmente'];
+                    }
+                    diagnoses.push({ metric: 'Frequência', status, priority, current: m.frequencia.toFixed(1), benchmark: '1.5-2.5', message, actions });
+                }
+
+                // Análise CPC
+                if (m.cpc > 0) {
+                    let status, priority, message, actions;
+                    if (m.cpc > benchmarks.cpc * 2) {
+                        status = 'critical';
+                        priority = 1;
+                        message = `CPC MUITO ALTO! R$ ${m.cpc.toFixed(2)} vs ideal R$ ${benchmarks.cpc.toFixed(2)}. Revise urgente!`;
+                        actions = [
+                            '🎯 Melhore CTR (criativos impactantes)',
+                            '📊 Revise targeting: pode estar muito restrito',
+                            '🔄 Use targeting AMPLO com Andromeda',
+                            '💡 Ative Advantage+ automation'
+                        ];
+                    } else if (m.cpc > benchmarks.cpc * 1.5) {
+                        status = 'warning';
+                        priority = 2;
+                        message = `CPC ALTO (R$ ${m.cpc.toFixed(2)} vs ideal R$ ${benchmarks.cpc.toFixed(2)})`;
+                        actions = [
+                            '🎨 Melhore criativos para aumentar CTR',
+                            '📊 Considere expandir targeting',
+                            '💡 Teste horários diferentes'
+                        ];
+                    } else {
+                        status = 'good';
+                        priority = 4;
+                        message = `CPC BOM (R$ ${m.cpc.toFixed(2)}). Continue assim!`;
+                        actions = ['✅ CPC está aceitável', '📊 Monitore e mantenha'];
+                    }
+                    diagnoses.push({ metric: 'CPC', status, priority, current: `R$ ${m.cpc.toFixed(2)}`, benchmark: `R$ ${benchmarks.cpc.toFixed(2)}`, message, actions });
+                }
+
+                // Análise ROAS
+                if (m.roas > 0) {
+                    let status, priority, message, actions;
+                    if (m.roas < benchmarks.roas * 0.6) {
+                        status = 'critical';
+                        priority = 1;
+                        message = `ROAS CRÍTICO! ${m.roas.toFixed(1)}x vs ideal ${benchmarks.roas}x. PERDENDO DINHEIRO!`;
+                        actions = [
+                            '🚨 PAUSE: você está perdendo dinheiro',
+                            '🔍 Revise TODA estrutura: oferta, página, público',
+                            '💰 Recalcule margem e CPA máximo',
+                            '🎯 Teste oferta diferente'
+                        ];
+                    } else if (m.roas < benchmarks.roas) {
+                        status = 'warning';
+                        priority = 2;
+                        message = `ROAS abaixo (${m.roas.toFixed(1)}x vs ${benchmarks.roas}x). Otimize!`;
+                        actions = [
+                            '📈 Otimize página: depoimentos, garantia',
+                            '⬆️ Aumente ticket: upsell, bundles',
+                            '🎨 Melhore CTR para baixar CPC',
+                            '⏱️ Aguarde 14 dias antes de mudanças grandes'
+                        ];
+                    } else if (m.roas >= benchmarks.roas * 1.5) {
+                        status = 'excellent';
+                        priority = 4;
+                        message = `ROAS EXCELENTE (${m.roas.toFixed(1)}x)! ESCALE AGORA!`;
+                        actions = [
+                            '🚀 ESCALE +40-50% HOJE!',
+                            '📊 Duplique criativos vencedores',
+                            '🎯 Expanda para lookalikes',
+                            '💰 Considere aumentar preço'
+                        ];
+                    } else {
+                        status = 'good';
+                        priority = 3;
+                        message = `ROAS BOM (${m.roas.toFixed(1)}x). Escale gradualmente!`;
+                        actions = [
+                            '📈 Escale +20-30% a cada 3 dias',
+                            '✅ Mantenha o que funciona',
+                            '🎨 Continue testando criativos'
+                        ];
+                    }
+                    diagnoses.push({ metric: 'ROAS', status, priority, current: `${m.roas.toFixed(1)}x`, benchmark: `${benchmarks.roas}x`, message, actions });
+                }
+
+                // Ordenar por prioridade
+                diagnoses.sort((a, b) => a.priority - b.priority);
+
+                // Status geral da campanha
+                const criticalCount = diagnoses.filter(d => d.status === 'critical').length;
+                const warningCount = diagnoses.filter(d => d.status === 'warning').length;
+                let campaignStatus, campaignStatusBg, campaignIcon, campaignRecommendation;
+                
+                if (criticalCount > 0) {
+                    campaignStatus = 'CRÍTICO';
+                    campaignStatusBg = '#ffebee';
+                    campaignIcon = '🔴';
+                    campaignRecommendation = 'AÇÃO URGENTE NECESSÁRIA!';
+                } else if (warningCount > 1) {
+                    campaignStatus = 'ATENÇÃO';
+                    campaignStatusBg = '#fff3e0';
+                    campaignIcon = '🟠';
+                    campaignRecommendation = 'Precisa de otimizações';
+                } else if (warningCount === 1) {
+                    campaignStatus = 'BOM';
+                    campaignStatusBg = '#e8f5e9';
+                    campaignIcon = '🟢';
+                    campaignRecommendation = 'Pequenos ajustes';
+                } else {
+                    campaignStatus = 'EXCELENTE';
+                    campaignStatusBg = '#e3f2fd';
+                    campaignIcon = '⭐';
+                    campaignRecommendation = 'Continue ou ESCALE!';
+                }
+
+                // HTML da campanha
+                html += `
+                    <div style="background: ${campaignStatusBg}; padding: 30px; border-radius: 15px; margin-bottom: 40px; border-left: 5px solid ${
+                        criticalCount > 0 ? '#f44336' : warningCount > 1 ? '#ff9800' : warningCount === 1 ? '#4caf50' : '#2196f3'
+                    };">
+                        <h3 style="color: #064420; font-size: 1.5em; margin-bottom: 10px;">
+                            ${campaignIcon} CAMPANHA ${index + 1}: ${campaign.name}
+                        </h3>
+                        <div style="display: inline-block; background: white; padding: 8px 20px; border-radius: 20px; margin-bottom: 20px;">
+                            <strong>Status Geral:</strong> <span style="color: ${
+                                criticalCount > 0 ? '#c62828' : warningCount > 1 ? '#e65100' : warningCount === 1 ? '#2e7d32' : '#1565c0'
+                            };">${campaignStatus}</span> — ${campaignRecommendation}
+                        </div>
+
+                        <div class="metric-comparison">
+                            <div class="metric-item">
+                                <div class="metric-label">Gasto</div>
+                                <div class="metric-value" style="font-size: 1.3em;">R$ ${m.gasto.toFixed(2)}</div>
+                            </div>
+                            ${m.conversoes > 0 ? `
+                            <div class="metric-item">
+                                <div class="metric-label">Conversões</div>
+                                <div class="metric-value" style="font-size: 1.3em;">${Math.round(m.conversoes)}</div>
+                            </div>
+                            ` : ''}
+                            <div class="metric-item">
+                                <div class="metric-label">CTR</div>
+                                <div class="metric-value" style="font-size: 1.3em; color: ${
+                                    m.ctr < benchmarks.ctr * 0.6 ? '#c62828' : m.ctr < benchmarks.ctr ? '#e65100' : '#2e7d32'
+                                };">${m.ctr.toFixed(2)}%</div>
+                            </div>
+                            <div class="metric-item">
+                                <div class="metric-label">CPC</div>
+                                <div class="metric-value" style="font-size: 1.3em; color: ${
+                                    m.cpc > benchmarks.cpc * 2 ? '#c62828' : m.cpc > benchmarks.cpc * 1.5 ? '#e65100' : '#2e7d32'
+                                };">R$ ${m.cpc.toFixed(2)}</div>
+                            </div>
+                            ${m.frequencia > 0 ? `
+                            <div class="metric-item">
+                                <div class="metric-label">Frequência</div>
+                                <div class="metric-value" style="font-size: 1.3em; color: ${
+                                    m.frequencia > 4.0 ? '#c62828' : m.frequencia > 2.5 ? '#e65100' : '#2e7d32'
+                                };">${m.frequencia.toFixed(1)}</div>
+                            </div>
+                            ` : ''}
+                            ${m.roas > 0 ? `
+                            <div class="metric-item">
+                                <div class="metric-label">ROAS</div>
+                                <div class="metric-value" style="font-size: 1.3em; color: ${
+                                    m.roas < benchmarks.roas * 0.6 ? '#c62828' : m.roas < benchmarks.roas ? '#e65100' : '#2e7d32'
+                                };">${m.roas.toFixed(1)}x</div>
+                            </div>
+                            ` : ''}
+                        </div>
+
+                        <h4 style="color: #064420; margin-top: 30px; margin-bottom: 15px;">📋 Diagnóstico Detalhado:</h4>
+                `;
+
+                // Diagnósticos individuais
+                diagnoses.forEach(diag => {
+                    const statusClass = `diagnosis-${diag.status}`;
+                    const priorityClass = `priority-${diag.priority}`;
+                    
+                    html += `
+                        <div class="diagnosis-card ${statusClass}" style="margin-bottom: 15px;">
+                            <h3 style="font-size: 1.1em;">
+                                <span class="priority-badge ${priorityClass}">${diag.priority}</span>
+                                ${diag.metric}
+                            </h3>
+                            
+                            <p style="font-size: 1em; margin: 15px 0;">
+                                <strong>Sua métrica:</strong> ${diag.current} | 
+                                <strong>Benchmark:</strong> ${diag.benchmark}
+                            </p>
+                            
+                            <p style="margin: 10px 0; line-height: 1.6;">
+                                ${diag.message}
+                            </p>
+
+                            <h4 style="margin-top: 15px; margin-bottom: 8px; font-size: 0.95em;">Ações:</h4>
+                            <ul class="action-list" style="list-style: none; padding: 0;">
+                                ${diag.actions.map(action => `<li style="padding: 8px; margin: 5px 0; background: white; border-radius: 6px; font-size: 0.9em;">${action}</li>`).join('')}
+                            </ul>
+                        </div>
+                    `;
+                });
+
+                html += `</div>`; // Fecha div da campanha
+            });
+
+            // Resumo final e próximos passos
+            html += `
+                <div class="info-box" style="margin-top: 40px;">
+                    <h4>💡 Resumo e Próximos Passos:</h4>
+                    <ol style="padding-left: 20px; line-height: 1.8;">
+                        <li><strong>HOJE:</strong> Foque nas campanhas marcadas como CRÍTICO (🔴)</li>
+                        <li><strong>ESTA SEMANA:</strong> Otimize campanhas com ATENÇÃO (🟠)</li>
+                        <li><strong>CAMPANHAS BOM/EXCELENTE:</strong> Mantenha ou escale gradualmente</li>
+                        <li><strong>MONITORE:</strong> Refaça análise semanalmente</li>
+                    </ol>
+                </div>
+
+                <div class="checklist" style="margin-top: 30px;">
+                    <h3>✅ Checklist Geral Andromeda 2025</h3>
+                    
+                    <div class="checklist-item">
+                        <div class="checklist-icon">${globalMetrics.numCampanhas <= 3 ? '✅' : '❌'}</div>
+                        <div>
+                            <strong>Estrutura Consolidada:</strong> 
+                            ${globalMetrics.numCampanhas <= 3 ? 
+                                `Perfeito! ${globalMetrics.numCampanhas} campanhas (ideal 1-3)` : 
+                                `Você tem ${globalMetrics.numCampanhas} campanhas. Considere consolidar em 1-3 grandes!`}
+                        </div>
+                    </div>
+
+                    <div class="checklist-item">
+                        <div class="checklist-icon">⚠️</div>
+                        <div>
+                            <strong>Diversidade Criativa:</strong> 
+                            Certifique-se que cada campanha tem 10-15 criativos DIFERENTES
+                        </div>
+                    </div>
+
+                    <div class="checklist-item">
+                        <div class="checklist-icon">⚠️</div>
+                        <div>
+                            <strong>Targeting Amplo:</strong> 
+                            Use Advantage+ e evite segmentações estreitas
+                        </div>
+                    </div>
+
+                    <div class="checklist-item">
+                        <div class="checklist-icon">⚠️</div>
+                        <div>
+                            <strong>Refresh Regular:</strong> 
+                            Adicione 3-5 criativos novos a cada 7-14 dias em cada campanha
+                        </div>
+                    </div>
+                </div>
+
+                <button class="btn-new-analysis" onclick="location.reload()">
+                    📊 Nova Análise
+                </button>
+            `;
+
+            resultsSection.innerHTML = html;
+            
+            document.getElementById('uploadSection').classList.add('hidden');
+            resultsSection.classList.add('active');
+            
+            window.scrollTo(0, 0);
+        }
+
+        // ==========================================
+        // GERAÇÃO DO DIAGNÓSTICO
+        // ==========================================
+        
+        function generateDiagnosis(metrics) {
+            // Benchmarks Andromeda 2025
+            const benchmarks = {
+                ctr: 1.8, // Benchmark médio para 2025
+                cpc: 1.50,
+                cpm: 22.50,
+                cpa: null, // Depende do negócio
+                roas: 2.5,
+                frequencia: 2.5
+            };
+
+            const diagnoses = [];
+
+            // Análise CTR
+            if (metrics.ctr > 0) {
+                let status, priority, message;
+                if (metrics.ctr < benchmarks.ctr * 0.6) {
+                    status = 'critical';
+                    priority = 1;
+                    message = `SEU CTR ESTÁ CRÍTICO! Apenas ${metrics.ctr.toFixed(2)}% quando deveria ser no mínimo ${(benchmarks.ctr * 0.7).toFixed(1)}%. Isso significa que seus criativos NÃO estão chamando atenção.`;
+                } else if (metrics.ctr < benchmarks.ctr) {
+                    status = 'warning';
+                    priority = 2;
+                    message = `Seu CTR está abaixo do ideal (${metrics.ctr.toFixed(2)}% vs ${benchmarks.ctr.toFixed(1)}%). Seus criativos precisam de melhorias.`;
+                } else if (metrics.ctr < benchmarks.ctr * 1.5) {
+                    status = 'good';
+                    priority = 4;
+                    message = `Seu CTR está BOM (${metrics.ctr.toFixed(2)}%)! Continue testando novos criativos para melhorar ainda mais.`;
+                } else {
+                    status = 'excellent';
+                    priority = 4;
+                    message = `SEU CTR ESTÁ EXCELENTE (${metrics.ctr.toFixed(2)}%)! Seus criativos estão funcionando muito bem. Agora foque em escalar!`;
+                }
+
+                diagnoses.push({
+                    metric: 'CTR - Taxa de Cliques',
+                    status: status,
+                    priority: priority,
+                    current: `${metrics.ctr.toFixed(2)}%`,
+                    benchmark: `${benchmarks.ctr.toFixed(1)}%`,
+                    message: message,
+                    actions: getCTRActions(metrics.ctr, benchmarks.ctr)
+                });
+            }
+
+            // Análise ROAS
+            if (metrics.roas > 0) {
+                let status, priority, message;
+                if (metrics.roas < benchmarks.roas * 0.6) {
+                    status = 'critical';
+                    priority = 1;
+                    message = `SEU ROAS ESTÁ CRÍTICO! Apenas ${metrics.roas.toFixed(1)}x quando deveria ser no mínimo ${(benchmarks.roas * 0.8).toFixed(1)}x. Você está PERDENDO DINHEIRO!`;
+                } else if (metrics.roas < benchmarks.roas) {
+                    status = 'warning';
+                    priority = 2;
+                    message = `Seu ROAS está abaixo do ideal (${metrics.roas.toFixed(1)}x vs ${benchmarks.roas.toFixed(1)}x). Precisa otimizar urgente.`;
+                } else if (metrics.roas < benchmarks.roas * 1.5) {
+                    status = 'good';
+                    priority = 3;
+                    message = `Seu ROAS está BOM (${metrics.roas.toFixed(1)}x)! Você está lucrando, mas pode melhorar.`;
+                } else {
+                    status = 'excellent';
+                    priority = 4;
+                    message = `SEU ROAS ESTÁ EXCELENTE (${metrics.roas.toFixed(1)}x)! ESCALE AGRESSIVAMENTE AGORA! +40-50%!`;
+                }
+
+                diagnoses.push({
+                    metric: 'ROAS - Retorno Sobre Investimento',
+                    status: status,
+                    priority: priority,
+                    current: `${metrics.roas.toFixed(1)}x`,
+                    benchmark: `${benchmarks.roas.toFixed(1)}x`,
+                    message: message,
+                    actions: getROASActions(metrics.roas, benchmarks.roas)
+                });
+            }
+
+            // Análise CPC
+            if (metrics.cpc > 0) {
+                let status, priority, message;
+                if (metrics.cpc > benchmarks.cpc * 1.5) {
+                    status = 'warning';
+                    priority = 2;
+                    message = `Seu CPC está ALTO (R$ ${metrics.cpc.toFixed(2)} vs ideal R$ ${benchmarks.cpc.toFixed(2)}). Isso indica CTR baixo ou competição alta.`;
+                } else if (metrics.cpc > benchmarks.cpc) {
+                    status = 'warning';
+                    priority = 3;
+                    message = `Seu CPC está um pouco acima do ideal (R$ ${metrics.cpc.toFixed(2)} vs R$ ${benchmarks.cpc.toFixed(2)}).`;
+                } else {
+                    status = 'good';
+                    priority = 4;
+                    message = `Seu CPC está BOM (R$ ${metrics.cpc.toFixed(2)})! Continue assim.`;
+                }
+
+                diagnoses.push({
+                    metric: 'CPC - Custo Por Clique',
+                    status: status,
+                    priority: priority,
+                    current: `R$ ${metrics.cpc.toFixed(2)}`,
+                    benchmark: `R$ ${benchmarks.cpc.toFixed(2)}`,
+                    message: message,
+                    actions: getCPCActions(metrics.cpc, benchmarks.cpc)
+                });
+            }
+
+            // Análise Frequência
+            if (metrics.frequencia > 0) {
+                let status, priority, message;
+                if (metrics.frequencia > 4.0) {
+                    status = 'critical';
+                    priority = 1;
+                    message = `FADIGA DE ANÚNCIO! Frequência ${metrics.frequencia.toFixed(1)} é MUITO ALTA (ideal < 2.5). Suas pessoas estão vendo o mesmo anúncio muitas vezes!`;
+                } else if (metrics.frequencia > 2.5) {
+                    status = 'warning';
+                    priority = 2;
+                    message = `Sua frequência está alta (${metrics.frequencia.toFixed(1)} vs ideal 1.5-2.5). Monitore de perto e prepare novos criativos.`;
+                } else if (metrics.frequencia > 1.5) {
+                    status = 'good';
+                    priority = 4;
+                    message = `Sua frequência está BOA (${metrics.frequencia.toFixed(1)}). Está no ponto ideal!`;
+                } else {
+                    status = 'excellent';
+                    priority = 4;
+                    message = `Sua frequência está EXCELENTE (${metrics.frequencia.toFixed(1)}). Anúncios frescos!`;
+                }
+
+                diagnoses.push({
+                    metric: 'Frequência',
+                    status: status,
+                    priority: priority,
+                    current: metrics.frequencia.toFixed(1),
+                    benchmark: '1.5-2.5',
+                    message: message,
+                    actions: getFrequenciaActions(metrics.frequencia)
+                });
+            }
+
+            // Análise de Estrutura Andromeda
+            if (metrics.numCampanhas > 5) {
+                diagnoses.push({
+                    metric: 'Estrutura de Campanha (Andromeda)',
+                    status: 'warning',
+                    priority: 2,
+                    current: `${metrics.numCampanhas} campanhas`,
+                    benchmark: '1-3 campanhas',
+                    message: `Você tem ${metrics.numCampanhas} campanhas ativas. Com Andromeda 2025, é melhor consolidar em 1-3 campanhas grandes com muitos criativos dentro!`,
+                    actions: [
+                        '🔄 Consolide suas campanhas: agrupe por objetivo (vendas, leads, etc)',
+                        '📊 Use CBO (Campaign Budget Optimization) para deixar o algoritmo distribuir o budget',
+                        '🎨 Coloque 10-20 criativos DIFERENTES dentro de cada campanha consolidada',
+                        '⏱️ Deixe aprender por 7 dias antes de fazer mudanças grandes'
+                    ]
+                });
+            }
+
+            // Ordenar por prioridade
+            diagnoses.sort((a, b) => a.priority - b.priority);
+
+            // Gerar HTML dos resultados
+            displayResults(diagnoses, metrics);
+        }
+
+        function getCTRActions(ctr, benchmark) {
+            if (ctr < benchmark * 0.6) {
+                return [
+                    '🚨 URGENTE: Pause campanhas com CTR < 0.8% imediatamente',
+                    '🎨 Crie 10-15 criativos COMPLETAMENTE DIFERENTES (UGC, vídeos, carrosséis)',
+                    '📝 Teste headlines impactantes: números, urgência, curiosidade',
+                    '🎯 Revise sua oferta: está clara e atrativa o suficiente?',
+                    '📊 Use thumb-stop rate: primeiros 3 segundos do vídeo são críticos'
+                ];
+            } else if (ctr < benchmark) {
+                return [
+                    '🎨 Adicione 5-7 novos criativos nos próximos 7 dias',
+                    '📹 Teste vídeos curtos (15-30 seg) com hook forte',
+                    '💬 Use depoimentos de clientes reais (UGC)',
+                    '🔄 Teste formatos diferentes: carrossel, coleção, stories',
+                    '✍️ A/B teste headlines: problema vs benefício vs curiosidade'
+                ];
+            } else {
+                return [
+                    '✅ Continue testando 3-5 novos criativos por semana',
+                    '📊 Documente o que funciona para replicar',
+                    '🔄 Refresh criativos a cada 14 dias para evitar fadiga',
+                    '📈 Considere escalar budget em 20-30%'
+                ];
+            }
+        }
+
+        function getROASActions(roas, benchmark) {
+            if (roas < benchmark * 0.6) {
+                return [
+                    '🚨 PARE OS ANÚNCIOS: Você está perdendo dinheiro!',
+                    '🔍 Revise TODA a estrutura: oferta, página, público, criativos',
+                    '💰 Recalcule sua margem: seu CPA máximo está correto?',
+                    '🎯 Teste uma oferta diferente (desconto, bônus, urgência)',
+                    '📊 Use apenas tráfego de conversão (não alcance ou engajamento)'
+                ];
+            } else if (roas < benchmark) {
+                return [
+                    '📈 Otimize página de vendas: depoimentos, garantia, urgência',
+                    '⬆️ Aumente ticket médio: upsell, cross-sell, bundles',
+                    '🎨 Melhore CTR para baixar CPC (isso reduz CPA)',
+                    '🔄 Teste públicos diferentes: lookalike, retargeting',
+                    '⏱️ Aguarde 14 dias de dados antes de grandes mudanças'
+                ];
+            } else if (roas >= benchmark * 1.5) {
+                return [
+                    '🚀 ESCALE AGRESSIVAMENTE! +40-50% no budget HOJE',
+                    '📊 Duplique criativos vencedores com variações',
+                    '🎯 Expanda para públicos similares (lookalike)',
+                    '💰 Considere aumentar preço do produto',
+                    '📈 Invista em branding para reduzir CPA futuro'
+                ];
+            } else {
+                return [
+                    '📈 Escale gradualmente: +20-30% a cada 3 dias',
+                    '✅ Mantenha o que está funcionando',
+                    '🎨 Continue testando novos criativos',
+                    '📊 Monitore métricas diariamente'
+                ];
+            }
+        }
+
+        function getCPCActions(cpc, benchmark) {
+            if (cpc > benchmark * 1.5) {
+                return [
+                    '🎯 Melhore CTR urgente (criativos mais impactantes)',
+                    '📊 Revise targeting: pode estar muito restrito',
+                    '🔄 Use targeting AMPLO com Andromeda (não segmente muito)',
+                    '💡 Ative Advantage+ para deixar algoritmo otimizar',
+                    '📈 Teste horários diferentes (madrugada geralmente é mais barato)'
+                ];
+            } else {
+                return [
+                    '✅ Seu CPC está aceitável',
+                    '🎨 Continue melhorando criativos para baixar mais',
+                    '📊 Monitore e mantenha'
+                ];
+            }
+        }
+
+        function getFrequenciaActions(freq) {
+            if (freq > 4.0) {
+                return [
+                    '🚨 PAUSE IMEDIATAMENTE e troque todos os criativos',
+                    '🎨 Prepare 10-15 criativos NOVOS antes de religar',
+                    '🔄 Considere expandir público (estava muito pequeno)',
+                    '📊 Adicione exclusões: quem já comprou, quem já viu muito',
+                    '⏱️ Monitore frequência DIARIAMENTE daqui pra frente'
+                ];
+            } else if (freq > 2.5) {
+                return [
+                    '⚠️ Prepare 5-7 criativos novos para os próximos 7 dias',
+                    '🎨 Não espere chegar em 4.0 (já é tarde demais)',
+                    '📊 Considere expandir público ligeiramente',
+                    '🔄 Rotacione criativos: pause os mais antigos'
+                ];
+            } else {
+                return [
+                    '✅ Frequência está ótima!',
+                    '🔄 Continue adicionando 3-5 criativos novos a cada 14 dias',
+                    '📊 Monitore semanalmente'
+                ];
+            }
+        }
+
+        function displayResults(diagnoses, metrics) {
+            const resultsSection = document.getElementById('resultsSection');
+            
+            let html = `
+                <h2 style="color: #064420; margin-bottom: 30px;">📊 Diagnóstico Completo da Sua Campanha</h2>
+
+                <div class="summary-grid">
+                    <div class="summary-card">
+                        <h4>Gasto Total</h4>
+                        <div class="value">R$ ${metrics.totalGasto.toFixed(2)}</div>
+                    </div>
+                    <div class="summary-card">
+                        <h4>Conversões</h4>
+                        <div class="value">${Math.round(metrics.totalConversoes)}</div>
+                    </div>
+                    <div class="summary-card">
+                        <h4>CTR Médio</h4>
+                        <div class="value">${metrics.ctr.toFixed(2)}%</div>
+                    </div>
+                    ${metrics.roas > 0 ? `
+                    <div class="summary-card">
+                        <h4>ROAS</h4>
+                        <div class="value">${metrics.roas.toFixed(1)}x</div>
+                    </div>
+                    ` : ''}
+                </div>
+
+                <h3 style="color: #064420; margin: 40px 0 20px 0;">🎯 Diagnóstico por Prioridade</h3>
+            `;
+
+            diagnoses.forEach(diag => {
+                const statusClass = `diagnosis-${diag.status}`;
+                const priorityClass = `priority-${diag.priority}`;
+                
+                html += `
+                    <div class="diagnosis-card ${statusClass}">
+                        <h3>
+                            <span class="priority-badge ${priorityClass}">${diag.priority}</span>
+                            ${diag.metric}
+                        </h3>
+                        
+                        <div class="metric-comparison">
+                            <div class="metric-item">
+                                <div class="metric-label">Sua Métrica</div>
+                                <div class="metric-value">${diag.current}</div>
+                                <div class="metric-status status-${diag.status}">
+                                    ${diag.status === 'critical' ? 'Crítico' : 
+                                      diag.status === 'warning' ? 'Atenção' : 
+                                      diag.status === 'good' ? 'Bom' : 'Excelente'}
+                                </div>
+                            </div>
+                            <div class="metric-item">
+                                <div class="metric-label">Benchmark 2025</div>
+                                <div class="metric-value" style="color: #064420;">${diag.benchmark}</div>
+                                <div class="metric-status" style="background: #e8f5e9; color: #064420;">Meta</div>
+                            </div>
+                        </div>
+
+                        <p style="font-size: 1.1em; margin: 20px 0; line-height: 1.6;">
+                            ${diag.message}
+                        </p>
+
+                        <h4 style="color: #064420; margin-top: 20px; margin-bottom: 10px;">📋 Ações Recomendadas:</h4>
+                        <ul class="action-list">
+                            ${diag.actions.map(action => `<li>${action}</li>`).join('')}
+                        </ul>
+                    </div>
+                `;
+            });
+
+            // Checklist Andromeda
+            html += `
+                <div class="checklist">
+                    <h3>✅ Checklist de Conformidade Andromeda 2025</h3>
+                    <p style="color: #666; margin-bottom: 20px;">Verifique se sua campanha está otimizada para o novo algoritmo:</p>
+
+                    <div class="checklist-item">
+                        <div class="checklist-icon">${metrics.numCampanhas <= 3 ? '✅' : '❌'}</div>
+                        <div>
+                            <strong>Estrutura Consolidada:</strong> 
+                            ${metrics.numCampanhas <= 3 ? 
+                                `Ótimo! Você tem ${metrics.numCampanhas} campanhas (ideal 1-3)` : 
+                                `Você tem ${metrics.numCampanhas} campanhas. Consolide em 1-3 grandes!`}
+                        </div>
+                    </div>
+
+                    <div class="checklist-item">
+                        <div class="checklist-icon">${metrics.ctr >= 1.8 ? '✅' : '⚠️'}</div>
+                        <div>
+                            <strong>CTR Adequado:</strong> 
+                            ${metrics.ctr >= 1.8 ? 
+                                `Excelente! Seu CTR ${metrics.ctr.toFixed(2)}% está acima de 1.8%` : 
+                                `Melhore criativos! CTR ${metrics.ctr.toFixed(2)}% está abaixo de 1.8%`}
+                        </div>
+                    </div>
+
+                    <div class="checklist-item">
+                        <div class="checklist-icon">${metrics.frequencia > 0 && metrics.frequencia <= 2.5 ? '✅' : '⚠️'}</div>
+                        <div>
+                            <strong>Frequência Controlada:</strong> 
+                            ${metrics.frequencia > 0 ? 
+                                (metrics.frequencia <= 2.5 ? 
+                                    `Perfeito! Frequência ${metrics.frequencia.toFixed(1)} está ideal` : 
+                                    `Atenção! Frequência ${metrics.frequencia.toFixed(1)} está alta, troque criativos`) :
+                                'Dados de frequência não disponíveis'}
+                        </div>
+                    </div>
+
+                    <div class="checklist-item">
+                        <div class="checklist-icon">⚠️</div>
+                        <div>
+                            <strong>Diversidade Criativa:</strong> 
+                            Certifique-se de ter 10-15 criativos DIFERENTES (não apenas variações de texto)
+                        </div>
+                    </div>
+
+                    <div class="checklist-item">
+                        <div class="checklist-icon">⚠️</div>
+                        <div>
+                            <strong>Targeting Amplo:</strong> 
+                            Use Advantage+ e evite segmentações muito estreitas
+                        </div>
+                    </div>
+
+                    <div class="checklist-item">
+                        <div class="checklist-icon">⚠️</div>
+                        <div>
+                            <strong>Refresh Regular:</strong> 
+                            Adicione 3-5 criativos novos a cada 7-14 dias
+                        </div>
+                    </div>
+                </div>
+
+                <div class="info-box" style="margin-top: 30px;">
+                    <h4>💡 Próximos Passos:</h4>
+                    <ol style="padding-left: 20px; line-height: 1.8;">
+                        <li><strong>HOJE:</strong> Implemente as ações marcadas como CRÍTICO (prioridade 1)</li>
+                        <li><strong>ESTA SEMANA:</strong> Trabalhe nas ações de ATENÇÃO (prioridade 2)</li>
+                        <li><strong>PRÓXIMOS 14 DIAS:</strong> Otimize as demais métricas</li>
+                        <li><strong>MONITORE:</strong> Refaça esta análise semanalmente para acompanhar evolução</li>
+                    </ol>
+                </div>
+
+                <button class="btn-new-analysis" onclick="location.reload()">
+                    📊 Nova Análise
+                </button>
+            `;
+
+            resultsSection.innerHTML = html;
+            
+            document.getElementById('uploadSection').classList.add('hidden');
+            resultsSection.classList.add('active');
+            
+            window.scrollTo(0, 0);
+        }
+    </script>
+</body>
+</html>
